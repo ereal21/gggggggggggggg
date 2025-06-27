@@ -2,6 +2,10 @@ from flask import Flask, request, abort
 import datetime
 import hmac
 import hashlib
+import asyncio
+from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from bot.localization import t
 
 from bot.misc import EnvKeys, TgConfig
 from bot.database import Database
@@ -11,6 +15,7 @@ from bot.database.methods import (
     create_operation,
     update_balance,
     get_user_referral,
+    get_user_language,
 )
 from bot.logger_mesh import logger
 
@@ -53,6 +58,7 @@ def nowpayments_ipn():
         if record:
             value = record.operation_value
             user_id = record.user_id
+            message_id = record.message_id
             finish_operation(payment_id)
             formatted_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             create_operation(user_id, value, formatted_time)
@@ -65,5 +71,20 @@ def nowpayments_ipn():
 
             logger.info(
                 "NOWPayments IPN confirmed payment %s for user %s", payment_id, user_id
+            )
+
+            # notify user and delete invoice
+            bot = Bot(token=EnvKeys.TOKEN, parse_mode="HTML")
+            lang = get_user_language(user_id) or 'en'
+            markup = InlineKeyboardMarkup().add(
+                InlineKeyboardButton(t(lang, 'back_home'), callback_data='home_menu')
+            )
+            asyncio.run(bot.delete_message(chat_id=user_id, message_id=message_id))
+            asyncio.run(
+                bot.send_message(
+                    chat_id=user_id,
+                    text=t(lang, 'payment_successful', amount=value),
+                    reply_markup=markup,
+                )
             )
     return "", 200
