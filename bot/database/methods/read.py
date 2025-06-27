@@ -235,15 +235,19 @@ def select_unfinished_operations(operation_id: str) -> list[int] | None:
         return None
 
 
-def get_unfinished_operation(operation_id: str) -> tuple[int, int] | None:
-    """Return (user_id, operation_value) for unfinished operation."""
+def get_unfinished_operation(operation_id: str) -> tuple[int, int, int | None] | None:
+    """Return (user_id, operation_value, message_id) for unfinished operation."""
     result = (
         Database()
-        .session.query(UnfinishedOperations.user_id, UnfinishedOperations.operation_value)
+        .session.query(
+            UnfinishedOperations.user_id,
+            UnfinishedOperations.operation_value,
+            UnfinishedOperations.message_id,
+        )
         .filter(UnfinishedOperations.operation_id == operation_id)
         .first()
     )
-    return (result.user_id, result.operation_value) if result else None
+    return (result.user_id, result.operation_value, result.message_id) if result else None
 
 
 def check_user_referrals(user_id: int) -> list[int]:

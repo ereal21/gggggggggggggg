@@ -21,9 +21,11 @@ LANGUAGES = {
             '❗️ <b>Important:</b> Send <u>exactly</u> this amount of {currency}.\n\n'
             '✅ <b>Confirmation is automatic via webhook after network confirmation.</b>'
         ),
-        'i_paid': 'I paid',
         'cancel': 'Cancel',
         'cancel_payment': '❌ Cancel Payment',
+        'payment_successful': '✅ Payment confirmed. Balance increased by {amount}€',
+        'back_home': 'Back Home',
+        'add_to_basket': 'Add to basket',
         'invoice_cancelled': 'Payment failed/expired. Your items are no longer reserved.',
         'total_purchases': '📦 Total Purchases: {count}',
         'note': '⚠️ Note: No refunds. Please ensure you send the exact amount for payments, as underpayments will not be confirmed.',
@@ -59,9 +61,11 @@ LANGUAGES = {
             '❗️ <b>Важно:</b> Отправьте <u>ровно</u> это количество {currency}.\n\n'
             '✅ <b>Подтверждение произойдет автоматически через вебхук после подтверждения сети.</b>'
         ),
-        'i_paid': 'Я оплатил',
         'cancel': 'Отмена',
         'cancel_payment': '❌ Отменить оплату',
+        'payment_successful': '✅ Платёж подтверждён. Баланс пополнен на {amount}€',
+        'back_home': 'Назад домой',
+        'add_to_basket': 'Добавить в корзину',
         'invoice_cancelled': 'Оплата не завершена/истекла. Ваши товары больше не зарезервированы.',
         'total_purchases': '📦 Всего покупок: {count}',
         'note': '⚠️ Возврат средств невозможен. Отправляйте точную сумму, недоплаты не подтверждаются.',
@@ -96,9 +100,11 @@ LANGUAGES = {
             '❗️ <b>Svarbu:</b> Nusiųskite <u>tiksliai</u> tiek {currency} į šį adresą.\n\n'
             '✅ <b>Patvirtinimas vyks automatiškai per webhook po tinklo patvirtinimo.</b>'
         ),
-        'i_paid': 'Apmokėjau',
         'cancel': 'Atšaukti',
         'cancel_payment': '❌ Atšaukti mokėjimą',
+        'payment_successful': '✅ Mokėjimas patvirtintas. Balansas padidintas {amount}€',
+        'back_home': 'Grįžti į pradžią',
+        'add_to_basket': 'Įdėti į krepšelį',
         'invoice_cancelled': 'Mokėjimas nepavyko/baigėsi. Jūsų prekės nebėra rezervuotos.',
         'total_purchases': '📦 Viso pirkinių: {count}',
         'note': '⚠️ Pastaba: grąžinimų nėra. Įsitikinkite, kad siunčiate tikslią sumą, nes nepakankamos sumos nebus patvirtintos.',
