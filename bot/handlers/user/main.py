@@ -33,11 +33,11 @@ from bot.misc.nowpayments import create_payment, check_payment
 def build_menu_text(user_obj, balance: float, purchases: int, lang: str) -> str:
     """Return main menu text. Greeting remains in English regardless of language."""
     mention = f"<a href='tg://user?id={user_obj.id}'>{html.escape(user_obj.full_name)}</a>"
-    # The greeting is kept in English so the text does not change when switching languages
+    basket_count = len(TgConfig.BASKETS.get(user_obj.id, []))
     return (
         f"{t(lang, 'hello', user=mention)}\n"
         f"{t(lang, 'balance', balance=f'{balance:.2f}')}\n"
-        f"{t(lang, 'basket', items=0)}\n"
+        f"{t(lang, 'basket', items=basket_count)}\n"
         f"{t(lang, 'total_purchases', count=purchases)}\n\n"
         f"{t(lang, 'note')}"
      )
@@ -234,7 +234,8 @@ async def item_info_callback_handler(call: CallbackQuery):
     quantity = 'Quantity - unlimited'
     if not check_value(item_name):
         quantity = f'Quantity - {select_item_values_amount(item_name)}pcs.'
-    markup = item_info(item_name, category)
+    lang = get_user_language(user_id) or 'en'
+    markup = item_info(item_name, category, lang)
     await bot.edit_message_text(
         f'🏪 Item {item_name}\n'
         f'Description: {item_info_list["description"]}\n'
@@ -248,10 +249,17 @@ async def item_info_callback_handler(call: CallbackQuery):
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Inline markup for Home button
-def home_markup():
+def home_markup(lang: str = 'en'):
     return InlineKeyboardMarkup().add(
-        InlineKeyboardButton("🏠 Home", callback_data="home_menu")
+        InlineKeyboardButton(t(lang, 'back_home'), callback_data="home_menu")
     )
+
+async def add_to_basket_handler(call: CallbackQuery):
+    item_name = call.data[len('addbasket_'):]
+    bot, user_id = await get_bot_user_ids(call)
+    basket = TgConfig.BASKETS.setdefault(user_id, [])
+    basket.append(item_name)
+    await call.answer('Added to basket')
 
 async def buy_item_callback_handler(call: CallbackQuery):
     item_name = call.data[4:]
@@ -275,7 +283,7 @@ async def buy_item_callback_handler(call: CallbackQuery):
                         photo=photo,
                         caption=f'✅ Item purchased. <b>Balance</b>: <i>{new_balance}</i>€',
                         parse_mode='HTML',
-                        reply_markup=home_markup()
+                        reply_markup=home_markup(get_user_language(user_id) or 'en')
                     )
                 os.remove(value_data['value'])
                 await bot.edit_message_text(chat_id=call.message.chat.id,
@@ -290,7 +298,7 @@ async def buy_item_callback_handler(call: CallbackQuery):
                                            message_id=msg,
                                            text=f'✅ Item purchased. <b>Balance</b>: <i>{new_balance}</i>€\n\n{value_data["value"]}',
                                            parse_mode='HTML',
-                                           reply_markup=home_markup()
+                                           reply_markup=home_markup(get_user_language(user_id) or 'en')
                 )
                 buy_item(value_data['id'], value_data['is_infinity'])
             add_bought_item(value_data['item_name'], value_data['value'], item_price, user_id, formatted_time)
@@ -483,7 +491,6 @@ async def pay_yoomoney(call: CallbackQuery):
 
     fake = type('Fake', (), {'text': amount, 'from_user': call.from_user})
     label, url = quick_pay(fake)
-    start_operation(user_id, amount, label)
     sleep_time = int(TgConfig.PAYMENT_TIME)
     lang = get_user_language(user_id) or 'en'
     markup = payment_menu(url, label, lang)
@@ -493,9 +500,11 @@ async def pay_yoomoney(call: CallbackQuery):
                                      f'⌛️ You have {int(sleep_time / 60)} minutes to pay.\n'
                                      f'<b>❗️ After payment press "Check payment"</b>',
                                 reply_markup=markup)
+    start_operation(user_id, amount, label, call.message.message_id)
     await asyncio.sleep(sleep_time)
     info = get_unfinished_operation(label)
     if info:
+        _, _, _ = info
         status = await check_payment_status(label)
         if status not in ('paid', 'success'):
             finish_operation(label)
@@ -511,7 +520,6 @@ async def crypto_payment(call: CallbackQuery):
         return
 
     payment_id, address, pay_amount = create_payment(float(amount), currency)
-    start_operation(user_id, amount, payment_id)
 
     sleep_time = int(TgConfig.PAYMENT_TIME)
     lang = get_user_language(user_id) or 'en'
@@ -535,16 +543,18 @@ async def crypto_payment(call: CallbackQuery):
     buf.seek(0)
 
     await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    await bot.send_photo(
+    sent = await bot.send_photo(
         chat_id=call.message.chat.id,
         photo=buf,
         caption=text,
         parse_mode='HTML',
         reply_markup=markup,
     )
+    start_operation(user_id, amount, payment_id, sent.message_id)
     await asyncio.sleep(sleep_time)
     info = get_unfinished_operation(payment_id)
     if info:
+        _, _, _ = info
         status = await check_payment(payment_id)
         if status not in ('finished', 'confirmed', 'sending'):
             finish_operation(payment_id)
@@ -558,7 +568,7 @@ async def checking_payment(call: CallbackQuery):
     info = get_unfinished_operation(label)
 
     if info:
-        user_id_db, operation_value = info
+        user_id_db, operation_value, _ = info
         payment_status = await check_payment_status(label)
         if payment_status is None:
             payment_status = await check_payment(label)
@@ -653,12 +663,8 @@ async def set_language(call: CallbackQuery, first_time=False):
     user = check_user(user_id)
     balance = user.balance if user else 0
     markup = main_menu(role, chat, TgConfig.HELPER_URL, lang_code)
-    text = (
-        f"{t(lang_code, 'hello', user=call.from_user.first_name)}\n"
-        f"{t(lang_code, 'balance', balance=f'{balance:.2f}')}\n"
-        f"{t(lang_code, 'basket', items=0)}\n\n"
-        f"{t(lang_code, 'overpay')}"
-    )
+    purchases = select_user_items(user_id)
+    text = build_menu_text(call.from_user, balance, purchases, lang_code)
 
     # Only send the video if it's the first time (after /start)
     if first_time:
@@ -723,6 +729,8 @@ def register_user_handlers(dp: Dispatcher):
                                        lambda c: c.data.startswith('category_'))
     dp.register_callback_query_handler(item_info_callback_handler,
                                        lambda c: c.data.startswith('item_'))
+    dp.register_callback_query_handler(add_to_basket_handler,
+                                       lambda c: c.data.startswith('addbasket_'))
     dp.register_callback_query_handler(buy_item_callback_handler,
                                        lambda c: c.data.startswith('buy_'))
     dp.register_callback_query_handler(pay_yoomoney,

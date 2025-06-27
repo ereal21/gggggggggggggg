@@ -174,12 +174,14 @@ class UnfinishedOperations(Database.BASE):
     user_id = Column(BigInteger, ForeignKey('users.telegram_id'), nullable=False)
     operation_value = Column(BigInteger, nullable=False)
     operation_id = Column(String(500), nullable=False)
+    message_id = Column(BigInteger, nullable=True)
     user_telegram_id = relationship("User", back_populates="user_unfinished_operations")
 
-    def __init__(self, user_id: int, operation_value: int, operation_id: str):
+    def __init__(self, user_id: int, operation_value: int, operation_id: str, message_id: int | None = None):
         self.user_id = user_id
         self.operation_value = operation_value
         self.operation_id = operation_id
+        self.message_id = message_id
 
 
 def register_models():

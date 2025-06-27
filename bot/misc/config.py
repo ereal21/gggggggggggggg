@@ -4,6 +4,7 @@ from typing import Final
 
 class TgConfig(ABC):
     STATE: Final = {}
+    BASKETS: Final = {}
     CHANNEL_URL: Final = 'https://t.me/NBAXSHOP'
     HELPER_URL: Final = '@nbaxox'
     GROUP_ID: Final = -988765433

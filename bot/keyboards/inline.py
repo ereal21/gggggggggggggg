@@ -118,8 +118,9 @@ def user_items_list(list_items: list, data: str, back_data: str, pre_back: str, 
     return markup
 
 
-def item_info(item_name: str, category_name: str) -> InlineKeyboardMarkup:
+def item_info(item_name: str, category_name: str, lang: str) -> InlineKeyboardMarkup:
     inline_keyboard = [
+        [InlineKeyboardButton(t(lang, 'add_to_basket'), callback_data=f'addbasket_{item_name}')],
         [InlineKeyboardButton('💰 Buy', callback_data=f'buy_{item_name}')],
         [InlineKeyboardButton('🔙 Go back', callback_data=f'category_{category_name}')
          ]
@@ -280,7 +281,6 @@ def payment_menu(url: str, label: str, lang: str) -> InlineKeyboardMarkup:
 def crypto_invoice_menu(invoice_id: str, lang: str) -> InlineKeyboardMarkup:
     """Return markup for crypto invoice."""
     inline_keyboard = [
-        [InlineKeyboardButton(t(lang, 'i_paid'), callback_data=f'check_{invoice_id}')],
         [InlineKeyboardButton(t(lang, 'cancel_payment'), callback_data=f'cancel_{invoice_id}')],
     ]
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)

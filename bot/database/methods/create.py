@@ -54,10 +54,10 @@ def create_operation(user_id: int, value: int, operation_time: str) -> None:
     session.commit()
 
 
-def start_operation(user_id: int, value: int, operation_id: str) -> None:
+def start_operation(user_id: int, value: int, operation_id: str, message_id: int | None = None) -> None:
     session = Database().session
     session.add(
-        UnfinishedOperations(user_id=user_id, operation_value=value, operation_id=operation_id))
+        UnfinishedOperations(user_id=user_id, operation_value=value, operation_id=operation_id, message_id=message_id))
     session.commit()
 
 
